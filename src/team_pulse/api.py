@@ -8,9 +8,6 @@ Two mechanisms are enforced structurally here, not left as prose rules:
 
   never full-read a big entry file. The same cap applies to the
   model-backed loop's internal gets (see answer.py); only the deterministic
-* `submit_answer()` raises `ConfirmationRequired` when
-  `confirmed` is not True, checked FIRST -- before credential resolution,
-  before validation, before any network call.
 """
 
 from __future__ import annotations
@@ -51,22 +48,6 @@ class TeamPulseNotConfigured(RuntimeError):
         )
         suffix = f" ({detail})" if detail else ""
         super().__init__(f"team-pulse is not configured{suffix}.\n{self.remedy}")
-
-
-class ConfirmationRequired(RuntimeError):
-    """A mutating capability was called without ``confirmed=True``.
-
-    Raised before any network call, config resolution, or validation -- the
-    write fence is checked first, so an unconfirmed call never even resolves
-    credentials.
-    """
-
-    def __init__(self, capability: str) -> None:
-        self.remedy = (
-            f"Call {capability}(..., confirmed=True) -- or pass --confirmed on the "
-            "CLI -- to acknowledge this call."
-        )
-        super().__init__(f"{capability} was called without confirmation. {self.remedy}")
 
 
 def _call(
@@ -227,17 +208,18 @@ def submit_answer(
     generated_at: str | None = None,
     metadata: dict[str, Any] | None = None,
     *,
-    confirmed: bool = False,
     config: Config | None = None,
 ) -> dict[str, Any]:
     """Record a session-mined answer to a reflection question for a github user.
 
-    WRITE -- raises `ConfirmationRequired` unless `confirmed=True`, checked
-    before any network call. `generated_at` defaults to the current UTC time
-    when omitted.
+    WRITE -- this reaches shared team data, attributed to `user_id`. There is
+    no confirmation flag: a flag cannot tell who set it, so it enforced
+    nothing while implying it did. The bundle had none either. What guards
+    this call is the capability description, which tells an agent to put the
+    write to the user before making it.
+
+    `generated_at` defaults to the current UTC time when omitted.
     """
-    if not confirmed:
-        raise ConfirmationRequired("submit_answer")
     ts = generated_at or datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     upload = AnswerUpload(
         question_id=question_id,

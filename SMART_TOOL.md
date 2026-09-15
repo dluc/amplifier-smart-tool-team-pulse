@@ -71,14 +71,13 @@ Full matrix (upgrading, uninstalling, developing on the tool): `INSTALL.md`.
 - **`get` returns whatever the server sends.** Index/overview/log pages can be
   hundreds of KB; `search`/`prefix` are the cheaper way to locate a specific
   page.
-- **One capability writes, and it writes to shared team data.**
-  `submit_answer` records an answer attributed to a named person, visible to
-  their team. It raises `ConfirmationRequired` unless called with
-  `confirmed=True` (`--confirmed` on the CLI), checked before any network call.
-  That flag is an assertion that a human approved this specific write, not a
-  formality to pass: if you are an agent, ask first, quoting the `user_id`,
-  `question_id` and answer text you are about to send. Nothing enforces this --
-  the fence cannot tell who set the flag.
+- **One capability writes, and nothing stops it.** `submit_answer` records
+  an answer attributed to a named person, visible to their team, as soon as
+  you call it. There is no confirmation flag: one cannot tell who set it,
+  so it would enforce nothing while implying it did, and the bundle this
+  was ported from had none. If you are an agent, put the `user_id`,
+  `question_id` and answer text to the user and get their approval BEFORE
+  calling it. That is the whole guard.
 - **The retrieval strategy ships verbatim** as `prompts/retrieval-strategy.md`
   and is used as `ask-local`'s system prompt. Nothing in this tool paraphrases it.
 
@@ -94,7 +93,7 @@ team-pulse resources --type question
 team-pulse resources --type member --view raw
 team-pulse graph
 team-pulse ask-service --prompt "How is the team tracking?"
-team-pulse submit-answer --user-id jdoe --question-id higher-level-work --answer "..." --confirmed
+team-pulse submit-answer --user-id jdoe --question-id higher-level-work --answer "..."
 team-pulse configure --url https://team-pulse.example.com
 team-pulse ask-local --question "What did we decide about the rename?"
 team-pulse manifest

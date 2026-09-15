@@ -21,7 +21,6 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from team_pulse.api import (
-    ConfirmationRequired,
     TeamPulseNotConfigured,
     ask_service,
     configure,
@@ -72,8 +71,8 @@ class CapabilityInfo:
 def capabilities() -> list[CapabilityInfo]:
     """Describe this tool's surface, derived from the catalog.
 
-    Includes which paths are destructive (require `confirmed=True`) and which
-    are model-backed (require a provider key).
+    Includes which paths are destructive (they write to shared data) and
+    which are model-backed (require a provider key).
     """
     return [
         CapabilityInfo(
@@ -92,7 +91,6 @@ __all__ = [
     "Answer",
     "CapabilityInfo",
     "Config",
-    "ConfirmationRequired",
     "Manifest",
     "ManifestUnavailable",
     "ModelCallFailed",

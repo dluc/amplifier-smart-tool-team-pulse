@@ -148,7 +148,6 @@ def ask_local(question: str, *, config: Config | None = None) -> Answer:
                     str(call.arguments.get("question_id", "")),
                     str(call.arguments.get("answer", "")),
                     generated_at=call.arguments.get("generated_at"),
-                    confirmed=True,
                     config=cfg,
                 )
             else:  # pragma: no cover -- the provider constrains names to _TOOLS

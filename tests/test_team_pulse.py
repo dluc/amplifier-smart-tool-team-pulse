@@ -172,7 +172,10 @@ def test_capabilities_lists_twelve_entries_with_flags() -> None:
     caps = {c.name: (c.destructive, c.model_backed) for c in tp.capabilities()}
     assert len(caps) == 12
     assert caps["submit_answer"] == (True, False)
-    assert caps["configure"] == (True, False)
+    # `configure` is NOT destructive: it merges into the caller's own settings
+    # file on their own machine. `destructive` means the write reaches shared
+    # data other people can see.
+    assert caps["configure"] == (False, False)
     assert caps["ask_local"] == (False, True)
 
 
@@ -310,7 +313,6 @@ def test_submit_answer_confirmed_request_shape(fake_client: type[_FakeClient]) -
         "higher-level-work",
         "did the thing",
         generated_at="2026-01-01T00:00:00Z",
-        confirmed=True,
     )
     # The server's record comes back whole -- notably respondent_handle, the
     # canonical handle it resolved user_id to.
@@ -338,15 +340,39 @@ def test_get_under_cap_returns_normally(fake_client: type[_FakeClient]) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Mechanism 3: write fence (checked first, nothing mocked)
+# The write guard is advisory, so the advisory has to be there
 # ---------------------------------------------------------------------------
 
 
-def test_submit_answer_raises_confirmation_required_with_nothing_mocked() -> None:
-    with pytest.raises(api.ConfirmationRequired) as excinfo:
-        tp.submit_answer("jdoe", "some-question", "an answer")
-    assert excinfo.value.remedy
-    assert "confirmed=True" in excinfo.value.remedy
+def test_destructive_capabilities_warn_and_say_nothing_can_stop_them() -> None:
+    """There is no confirmation flag -- a flag cannot tell who set it.
+
+    The description is the entire guard, so it must say what the call does and
+    that the caller is the one responsible. If this test fails, a write is
+    reaching a model with no warning attached.
+    """
+    from team_pulse.catalog import CATALOG
+
+    destructive = [c for c in CATALOG if c.destructive]
+    assert destructive, "expected at least one destructive capability"
+    for cap in destructive:
+        assert "WRITES TO SHARED" in cap.description.upper()
+        assert "approval" in cap.description or "approve" in cap.description
+
+
+def test_submit_answer_takes_no_confirmation_argument() -> None:
+    """Pins the removal.
+
+    The flag was security theatre: the model loop passed it automatically, so
+    the one caller most at risk never met it, and any other caller wanting to
+    write simply set it. The bundle had no such flag.
+    """
+    import inspect
+
+    from team_pulse.catalog import BY_VERB
+
+    assert "confirmed" not in inspect.signature(tp.submit_answer).parameters
+    assert "confirmed" not in [a.name for a in BY_VERB["submit_answer"].arguments]
 
 
 def test_api_error_remedy_points_at_info_for_unsupported_type() -> None:

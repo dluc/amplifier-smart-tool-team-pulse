@@ -258,14 +258,13 @@ CATALOG: tuple[Capability, ...] = (
             "question. Use this to record an AI-generated answer attributed "
             "to a specific user, synthesized from their Context Intelligence "
             "sessions.\n\n"
-            # The write fence is a mechanism; this is the intent behind it.
-            # `confirmed` cannot tell who set it, so the only thing that makes
-            # it meaningful is a caller that asks before setting it.
+            # There is no confirmation flag. One cannot tell who set it, so
+            # it enforced nothing while implying it did -- and the bundle had
+            # none. This paragraph is the whole guard.
             "WRITES TO SHARED TEAM DATA, attributed to a named person and "
-            "visible to their team. `confirmed=True` asserts that a human "
-            "approved THIS write. If you are an agent, put the `user_id`, "
-            "`question_id` and answer text to the user and get their approval "
-            "before setting it.\n\n"
+            "visible to their team. Nothing in this tool can stop the call: "
+            "if you are an agent, put the `user_id`, `question_id` and answer "
+            "text to the user and get their approval BEFORE calling it.\n\n"
             "question_id is the BARE SLUG (e.g. 'higher-level-work'), NOT the "
             "hierarchical 'questions/<slug>' form -- strip the 'questions/' "
             "prefix if you have it. Discover valid slugs via "
@@ -313,15 +312,6 @@ CATALOG: tuple[Capability, ...] = (
                 type="dict|None",
                 default="None",
                 help="Opaque provenance bag.",
-                model_hidden=True,
-            ),
-            Argument(
-                name="confirmed",
-                type="bool",
-                default="False",
-                help="Must be True to submit.",
-                # The loop confirms on the model's behalf; the model does not
-                # get to decide whether a write is confirmed.
                 model_hidden=True,
             ),
         ),
@@ -418,7 +408,10 @@ CATALOG: tuple[Capability, ...] = (
                 help="Azure AD app id override.",
             ),
         ),
-        destructive=True,
+        # NOT destructive: this writes the caller's own settings file on their
+        # own machine, merging rather than replacing. `destructive` is reserved
+        # for writes that reach shared data other people can see.
+        destructive=False,
     ),
     Capability(
         verb="manifest",

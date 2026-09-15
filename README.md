@@ -46,7 +46,7 @@ fetched; `ask-service` uses the **server's** and needs no key of your own.
 
 | Verb | What it's for | Library | In `ask-local` |
 |---|---|---|---|
-| `submit-answer` | Record a person's answer to a reflection question. Needs their GitHub username and the question's **bare slug** (`hard-questions`, not `questions/hard-questions`). Requires `--confirmed`. | `submit_answer()` | yes |
+| `submit-answer` | Record a person's answer to a reflection question. Needs their GitHub username and the question's **bare slug** (`hard-questions`, not `questions/hard-questions`). Writes to shared team data. | `submit_answer()` | yes |
 
 ## Setup and introspection
 
@@ -63,8 +63,10 @@ fetched; `ask-service` uses the **server's** and needs no key of your own.
 - **Preconditions are checked before anything is spent.** `ask-local` fails
   immediately if no provider key or no server is configured, rather than
   burning a model call to discover it.
-- **Writes are fenced first.** `submit-answer` raises `ConfirmationRequired`
-  without `--confirmed`, before any network call or credential resolution.
+- **The one write has no gate, deliberately.** `submit-answer` reaches
+  shared team data the moment you call it. A confirmation flag cannot tell
+  who set it, so it enforced nothing while implying it did -- and the
+  bundle had none. The capability description carries the warning instead.
 - **Importing costs nothing.** `import team_pulse` succeeds in an empty
   environment; credentials resolve only when a capability is called.
 

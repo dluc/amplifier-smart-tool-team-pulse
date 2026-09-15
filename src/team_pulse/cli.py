@@ -47,7 +47,7 @@ def _short_help() -> str:
         if cap.model_backed:
             marks.append("model-backed")
         if cap.destructive:
-            marks.append("writes -- needs --confirmed")
+            marks.append("writes to shared data")
         mark = f" [{', '.join(marks)}]" if marks else ""
         verb = cap.name.replace("_", "-")
         first = cap.description.split(". ")[0].rstrip(".") + "."
@@ -63,7 +63,7 @@ def _long_help() -> str:
         lines.append(f"  description  : {cap.description.splitlines()[0]}")
         lines.append(f"  model-backed : {'yes' if cap.model_backed else 'no'}")
         lines.append(
-            f"  destructive  : {'yes -- requires --confirmed' if cap.destructive else 'no'}"
+            f"  destructive  : {'yes -- writes to shared data' if cap.destructive else 'no'}"
         )
         if cap.arguments:
             lines.append("  arguments    :")
@@ -120,7 +120,6 @@ def _build_parser() -> argparse.ArgumentParser:
     answer_body.add_argument("--answer-file")
     p_submit.add_argument("--generated-at", default=None)
     p_submit.add_argument("--metadata", default=None, help="JSON object string.")
-    p_submit.add_argument("--confirmed", action="store_true")
 
     p_configure = sub.add_parser("configure", add_help=True)
     p_configure.add_argument("--url", required=True)
@@ -175,7 +174,6 @@ def _run(args: argparse.Namespace) -> Any:
             answer_text or "",
             generated_at=args.generated_at,
             metadata=metadata,
-            confirmed=args.confirmed,
         )
     if args.command == "configure":
         return tp.configure(args.url, client_id=args.client_id)
