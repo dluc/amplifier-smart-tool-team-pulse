@@ -1,0 +1,18 @@
+.venv/
+.data/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Local Amplifier state for this workspace.
+.amplifier/
+
+# Local credentials / endpoint config.
+.env
+
+# Personal notes
+.archived/

@@ -1,0 +1,42 @@
+[project]
+name = "team-pulse"
+version = "0.1.0"
+description = "Team Pulse lens API as structured data, plus a model-backed answer"
+requires-python = ">=3.12"
+dependencies = [
+  "httpx>=0.27",
+  "pyyaml>=6.0",
+  "azure-identity>=1.15",
+]
+
+[project.scripts]
+team-pulse = "team_pulse.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# One package ships from this distribution: the library. Per the spec, the
+# library and the CLI are the whole required surface -- any host integration
+# belongs to the host, which reads smart-tool.json and the manifest.
+[tool.hatch.build.targets.wheel]
+packages = ["src/team_pulse"]
+
+# Ship the manifest and the retrieval-strategy prompt inside the library so
+# `manifest()` and `prompts.retrieval_strategy()` never have to locate a file
+# on disk. The source-of-truth copies stay at the distribution root
+# (SMART_TOOL.md, where the spec requires it) and under prompts/, which the
+# build force-includes here.
+[tool.hatch.build.targets.wheel.force-include]
+"SMART_TOOL.md" = "team_pulse/_packaged/SMART_TOOL.md"
+"prompts/retrieval-strategy.md" = "team_pulse/_packaged/retrieval-strategy.md"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+# Point the type checker at the development virtualenv. Without this it
+# resolves against the system interpreter and reports httpx / azure-identity
+# as missing imports that are installed and working.
+[tool.pyright]
+venvPath = "."
+venv = ".venv"

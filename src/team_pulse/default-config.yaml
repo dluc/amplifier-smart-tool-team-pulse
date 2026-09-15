@@ -1,0 +1,25 @@
+# team-pulse shipped defaults -- the lowest-precedence configuration tier.
+#
+# Anything a user sets (TEAM_PULSE_* env var, .env file, or their own
+# ~/.team-pulse/config.yaml) overrides these. Keys here are the defaults the
+# tool falls back to when nothing else supplies a value.
+#
+# Deliberately absent, because they are deployment-specific and cannot have a
+# meaningful shipped value:
+#   url          -- your Team Pulse server. Set TEAM_PULSE_URL or run `team-pulse configure`.
+#   api_app_id   -- the Azure AD application registration of that server.
+#   key          -- a secret. Never put one in this file; use TEAM_PULSE_KEY.
+#
+# See CONFIGURATION.md.
+
+# Models used by `ask_local`. These names go stale -- a provider retiring a model
+# turns `ask_local` into an HTTP 404 with no code change on our side. Override
+# without touching the package:
+#   export TEAM_PULSE_OPENAI_MODEL=...   /   TEAM_PULSE_ANTHROPIC_MODEL=...
+# or set openai_model / anthropic_model in ~/.team-pulse/.env.
+
+# Used when OPENAI_API_KEY is set.
+openai_model: gpt-4o-mini
+
+# Used when only ANTHROPIC_API_KEY is set.
+anthropic_model: claude-sonnet-5

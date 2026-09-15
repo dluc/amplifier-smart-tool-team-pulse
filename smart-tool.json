@@ -1,0 +1,9 @@
+{
+  "manifest": "SMART_TOOL.md",
+  "cli_argv": [
+    "team-pulse"
+  ],
+  "deterministic_smoke": [
+    "status"
+  ]
+}
