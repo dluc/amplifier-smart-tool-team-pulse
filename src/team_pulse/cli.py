@@ -1,4 +1,4 @@
-"""Thin JSON CLI for the team-pulse smart tool. Contains no domain logic.
+"""Thin JSON CLI for the team-pulse-reports smart tool. Contains no domain logic.
 
 `-h` and `--help` are deliberately NOT aliases:
   -h      terse, scannable summary
@@ -18,7 +18,7 @@ from typing import Any, NoReturn
 
 import team_pulse as tp
 
-PROG = "team-pulse"
+PROG = "team-pulse-reports"
 
 
 class _EnvelopeArgumentParser(argparse.ArgumentParser):
@@ -88,38 +88,46 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("-h", action="store_true", dest="short_help")
     parser.add_argument("--help", action="store_true", dest="long_help")
     sub = parser.add_subparsers(dest="command")
+    enabled = {cap.name for cap in tp.capabilities()}
 
-    sub.add_parser("info", add_help=True)
+    if "info" in enabled:
+        sub.add_parser("info", add_help=True)
 
-    p_search = sub.add_parser("search", add_help=True)
-    p_search.add_argument("--q", required=True)
-    p_search.add_argument("--limit", type=int, default=50)
+    if "search" in enabled:
+        p_search = sub.add_parser("search", add_help=True)
+        p_search.add_argument("--q", required=True)
+        p_search.add_argument("--limit", type=int, default=50)
 
-    p_prefix = sub.add_parser("prefix", add_help=True)
-    p_prefix.add_argument("--prefix", required=True)
+    if "prefix" in enabled:
+        p_prefix = sub.add_parser("prefix", add_help=True)
+        p_prefix.add_argument("--prefix", required=True)
 
-    p_get = sub.add_parser("get", add_help=True)
-    p_get.add_argument("--id", required=True)
+    if "get" in enabled:
+        p_get = sub.add_parser("get", add_help=True)
+        p_get.add_argument("--id", required=True)
 
     p_resources = sub.add_parser("resources", add_help=True)
     p_resources.add_argument("--type", default=None)
     p_resources.add_argument("--view", default=None, choices=["effective", "raw"])
 
-    sub.add_parser("graph", add_help=True)
+    if "graph" in enabled:
+        sub.add_parser("graph", add_help=True)
     sub.add_parser("status", add_help=True)
 
-    p_ask = sub.add_parser("ask-service", add_help=True)
-    p_ask.add_argument("--prompt", required=True)
-    p_ask.add_argument("--focus", default=None)
+    if "ask_service" in enabled:
+        p_ask = sub.add_parser("ask-service", add_help=True)
+        p_ask.add_argument("--prompt", required=True)
+        p_ask.add_argument("--focus", default=None)
 
-    p_submit = sub.add_parser("submit-answer", add_help=True)
-    p_submit.add_argument("--user-id", required=True)
-    p_submit.add_argument("--question-id", required=True)
-    answer_body = p_submit.add_mutually_exclusive_group(required=True)
-    answer_body.add_argument("--answer")
-    answer_body.add_argument("--answer-file")
-    p_submit.add_argument("--generated-at", default=None)
-    p_submit.add_argument("--metadata", default=None, help="JSON object string.")
+    if "submit_answer" in enabled:
+        p_submit = sub.add_parser("submit-answer", add_help=True)
+        p_submit.add_argument("--user-id", required=True)
+        p_submit.add_argument("--question-id", required=True)
+        answer_body = p_submit.add_mutually_exclusive_group(required=True)
+        answer_body.add_argument("--answer")
+        answer_body.add_argument("--answer-file")
+        p_submit.add_argument("--generated-at", default=None)
+        p_submit.add_argument("--metadata", default=None, help="JSON object string.")
 
     p_configure = sub.add_parser("configure", add_help=True)
     p_configure.add_argument("--url", required=True)

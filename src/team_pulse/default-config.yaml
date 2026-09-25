@@ -1,4 +1,4 @@
-# team-pulse shipped defaults -- the lowest-precedence configuration tier.
+# team-pulse-reports shipped defaults -- the lowest-precedence configuration tier.
 #
 # Anything a user sets (TEAM_PULSE_* env var, .env file, or their own
 # ~/.team-pulse/config.yaml) overrides these. Keys here are the defaults the
@@ -6,7 +6,7 @@
 #
 # Deliberately absent, because they are deployment-specific and cannot have a
 # meaningful shipped value:
-#   url          -- your Team Pulse server. Set TEAM_PULSE_URL or run `team-pulse configure`.
+#   url          -- your Team Pulse server. Set TEAM_PULSE_URL or run `team-pulse-reports configure`.
 #   api_app_id   -- the Azure AD application registration of that server.
 #   key          -- a secret. Never put one in this file; use TEAM_PULSE_KEY.
 #

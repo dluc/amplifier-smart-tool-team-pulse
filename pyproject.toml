@@ -10,7 +10,7 @@ dependencies = [
 ]
 
 [project.scripts]
-team-pulse = "team_pulse.cli:main"
+team-pulse-reports = "team_pulse.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -75,7 +75,7 @@ def ask_local(question: str, *, config: Config | None = None) -> Answer:
 
     Raises:
         NoProviderConfigured: no `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` is set.
-        TeamPulseNotConfigured: no team-pulse endpoint/credentials resolve. A
+        TeamPulseNotConfigured: no team-pulse-reports endpoint/credentials resolve. A
             caller that can reach a human -- a CLI, or an agent talking to a
             user -- can ask for the URL and call `configure` before retrying.
     """

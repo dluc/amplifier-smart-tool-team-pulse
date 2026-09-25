@@ -129,7 +129,7 @@ CATALOG: tuple[Capability, ...] = (
     Capability(
         verb="info",
         description=(
-            "Fetch the team-pulse lens API self-description: name, version, "
+            "Fetch the team-pulse-reports lens API self-description: name, version, "
             "available resource_types, capabilities, and endpoint catalog. "
             "Use this first when you don't yet know what the API exposes."
         ),
@@ -139,7 +139,7 @@ CATALOG: tuple[Capability, ...] = (
     Capability(
         verb="resources",
         description=(
-            "List team-pulse resources. Returns the list envelope "
+            "List team-pulse-reports resources. Returns the list envelope "
             "{resources: [{id, title, type}], count}. Filter by ``type`` for "
             # DEVIATION: the bundle enumerates
             # (team | outcomes | initiative | project | member | task) here.
@@ -175,7 +175,7 @@ CATALOG: tuple[Capability, ...] = (
     Capability(
         verb="search",
         description=(
-            "Naive text search across all team-pulse resources. Returns the "
+            "Naive text search across all team-pulse-reports resources. Returns the "
             "same list envelope as `resources`. Default limit 50, "
             "max 200. Search is substring-matchy -- for precise lookups by ID "
             "prefer `get` or `prefix`."
@@ -254,7 +254,7 @@ CATALOG: tuple[Capability, ...] = (
     Capability(
         verb="submit_answer",
         description=(
-            "Submit a session-mined answer to a team-pulse reflection "
+            "Submit a session-mined answer to a team-pulse-reports reflection "
             "question. Use this to record an AI-generated answer attributed "
             "to a specific user, synthesized from their Context Intelligence "
             "sessions.\n\n"
@@ -389,7 +389,7 @@ CATALOG: tuple[Capability, ...] = (
     Capability(
         verb="configure",
         description=(
-            "Persist the team-pulse endpoint URL (and optional Azure AD app "
+            "Persist the team-pulse-reports endpoint URL (and optional Azure AD app "
             "id) to this machine's settings file, so it need not be supplied "
             "again."
         ),
@@ -451,17 +451,42 @@ CATALOG: tuple[Capability, ...] = (
     ),
 )
 
+# Temporarily disabled from the public smart-tool surface. Keep the
+# capability definitions available to the internal `ask_local` retrieval loop;
+# remove verbs from this set to re-expose them through the catalog and CLI.
+DISABLED_VERBS: frozenset[str] = frozenset(
+    {
+        "info",
+        "search",
+        "graph",
+        "submit_answer",
+        "ask_service",
+        "get",
+        "prefix",
+        "resources",
+    }
+)
+
 #: Lookup by CLI verb / library function name.
 BY_VERB: dict[str, Capability] = {c.verb: c for c in CATALOG}
 #: Lookup by model-facing tool name.
 BY_TOOL_NAME: dict[str, Capability] = {c.tool_name: c for c in CATALOG}
 
 
+def enabled(capability: Capability) -> bool:
+    return capability.verb not in DISABLED_VERBS
+
+
 def model_loop_tools() -> list[dict[str, Any]]:
-    """Tool definitions for `ask_local`'s model loop, in catalog order."""
+    """Internal tool definitions for `ask_local`, in catalog order.
+
+    Public visibility is intentionally independent of model-loop availability:
+    `ask_local` needs the retained retrieval operations even while their CLI
+    verbs and public catalog entries are hidden.
+    """
     return [c.as_tool() for c in CATALOG if c.in_model_loop]
 
 
 def public_capabilities() -> list[Capability]:
     """Capabilities with a CLI verb and a library function."""
-    return [c for c in CATALOG if not c.model_loop_only]
+    return [c for c in CATALOG if not c.model_loop_only and enabled(c)]

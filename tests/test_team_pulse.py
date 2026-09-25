@@ -1,4 +1,4 @@
-"""Acceptance tests for the team-pulse smart tool distribution. No network access.
+"""Acceptance tests for the team-pulse-reports smart tool distribution. No network access.
 
 Deterministic capabilities are exercised against a `_FakeClient` monkeypatched
 in place of `team_pulse.api.TeamPulseClient`, so these tests never touch the
@@ -125,7 +125,7 @@ class _FakeClient:
 
 @pytest.fixture(autouse=True)
 def _clear_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Every test starts with no team-pulse or provider credentials configured."""
+    """Every test starts with no team-pulse-reports or provider credentials configured."""
     for key in (
         "TEAM_PULSE_URL",
         "TEAM_PULSE_KEY",
@@ -167,11 +167,16 @@ def test_module_imports_with_empty_environment() -> None:
     assert callable(tp.capabilities)
 
 
-def test_capabilities_lists_twelve_entries_with_flags() -> None:
-    # 10 deterministic + ask_local (model-backed) + manifest = 12.
+def test_capabilities_lists_enabled_entries_with_flags() -> None:
+    # Seven capabilities are temporarily disabled in the catalog but retained
+    # in code for later re-enablement.
     caps = {c.name: (c.destructive, c.model_backed) for c in tp.capabilities()}
-    assert len(caps) == 12
-    assert caps["submit_answer"] == (True, False)
+    assert set(caps) == {
+        "ask_local",
+        "status",
+        "configure",
+        "manifest",
+    }
     # `configure` is NOT destructive: it merges into the caller's own settings
     # file on their own machine. `destructive` means the write reaches shared
     # data other people can see.
@@ -201,33 +206,22 @@ def test_retrieval_strategy_loads_and_is_nonempty() -> None:
     assert "team-pulse-expert" in text
 
 
-def test_system_prompt_carries_both_documents_verbatim() -> None:
-    """The bundle gave its agent an instruction AND a data-model reference.
-
-    Both reach the model: porting only the instruction left it citing a
-    reference it could not read.
-    """
-    from team_pulse.prompts import data_model_reference, retrieval_strategy
+def test_system_prompt_is_the_retrieval_strategy() -> None:
+    """The active system prompt contains only the shipped strategy."""
+    from team_pulse.prompts import retrieval_strategy
 
     root = Path(__file__).resolve().parents[1]
     strategy = (root / "prompts" / "retrieval-strategy.md").read_text(encoding="utf-8")
 
-    system = retrieval_strategy()
-    assert strategy.rstrip() in system
-    assert data_model_reference() in system
-    assert "Resource taxonomy" in system
-    assert "Common query patterns" in system
+    assert retrieval_strategy() == strategy.rstrip()
 
 
-def test_data_model_reference_is_the_manifest_section() -> None:
-    """One copy. It lives in the manifest body so a reader learning how to
-    call the tool and the model driving `ask_local` get the same text."""
+def test_manifest_documents_only_active_capabilities() -> None:
     import team_pulse as tp
-    from team_pulse.prompts import data_model_reference
 
     body = tp.manifest().body
-    assert "## Data model reference" in body
-    assert data_model_reference() in body
+    assert "## Active capability surface" in body
+    assert "## Data model reference" not in body
 
 
 def test_manifest_reference_code_fences_are_intact() -> None:
@@ -373,6 +367,14 @@ def test_submit_answer_takes_no_confirmation_argument() -> None:
 
     assert "confirmed" not in inspect.signature(tp.submit_answer).parameters
     assert "confirmed" not in [a.name for a in BY_VERB["submit_answer"].arguments]
+
+
+def test_hidden_capabilities_remain_available_to_ask_local() -> None:
+    from team_pulse.catalog import model_loop_tools
+
+    names = {tool["name"] for tool in model_loop_tools()}
+    assert {"info", "resources", "search", "prefix", "get", "graph", "submit_answer", "answer"} <= names
+    assert "ask_service" not in names
 
 
 def test_api_error_remedy_points_at_info_for_unsupported_type() -> None:
@@ -661,9 +663,14 @@ def test_cli_short_and_long_help_exit_zero_and_list_verbs(
     short_out = capsys.readouterr().out
     assert main(["--help"]) == 0
     long_out = capsys.readouterr().out
-    for verb in ("info", "search", "get", "ask-local", "status", "manifest"):
-        assert verb in short_out
-        assert verb in long_out
+    short_lines = short_out.splitlines()
+    long_lines = long_out.splitlines()
+    for verb in ("ask-local", "status", "manifest"):
+        assert any(line.lstrip().startswith(verb) for line in short_lines)
+        assert any(line == verb for line in long_lines)
+    for verb in ("info", "search", "graph", "submit-answer", "ask-service", "prefix", "get", "resources"):
+        assert not any(line.lstrip().startswith(verb) for line in short_lines)
+        assert verb not in long_lines
 
 
 def test_cli_status_exits_zero_on_empty_env(capsys: pytest.CaptureFixture[str]) -> None:
@@ -693,7 +700,7 @@ def test_cli_credential_needing_verb_exits_one_on_empty_env(
 ) -> None:
     from team_pulse.cli import main
 
-    assert main(["info"]) == 1
+    assert main(["ask-local", "--question", "hello"]) == 1
     payload = json.loads(capsys.readouterr().out)
     assert "error" in payload
     assert payload["error"]["remedy"]

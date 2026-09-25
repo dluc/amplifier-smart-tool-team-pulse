@@ -1,12 +1,12 @@
 # Install
 
 ```bash
-uv tool install 'team-pulse @ git+https://github.com/microsoft/amplifier-smart-tool-team-pulse'
-team-pulse status
+uv tool install 'team-pulse-reports @ git+https://github.com/microsoft/amplifier-smart-tool-team-pulse'
+team-pulse-reports status
 ```
 
 No virtual environment is needed, and none should be created — `uv tool install`
-builds the tool in its own environment and puts `team-pulse` on PATH. Do **not**
+builds the tool in its own environment and puts `team-pulse-reports` on PATH. Do **not**
 use `uv pip install` for the CLI: that is a library install and fails with
 `No virtual environment found` when no venv is active.
 
@@ -22,10 +22,10 @@ Requires Python ≥ 3.12 and [uv](https://docs.astral.sh/uv/).
 |---|---|
 | Upgrade | same command, add `--force` |
 | From a local checkout | `uv tool install /path/to/repo` |
-| Run without installing | `uvx --from git+https://github.com/microsoft/amplifier-smart-tool-team-pulse team-pulse status` |
-| Uninstall | `uv tool uninstall team-pulse` |
+| Run without installing | `uvx --from git+https://github.com/dluc/amplifier-smart-tool-team-pulse team-pulse-reports status` |
+| Uninstall | `uv tool uninstall team-pulse-reports` |
 
-If `team-pulse` isn't found after installing, `uv tool update-shell` and open a
+If `team-pulse-reports` isn't found after installing, `uv tool update-shell` and open a
 new shell, or invoke it as `python -m team_pulse`.
 
 ## Developing on the tool

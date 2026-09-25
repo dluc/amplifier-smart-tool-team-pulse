@@ -26,7 +26,7 @@ from team_pulse.models import AnswerUpload
 
 
 class TeamPulseNotConfigured(RuntimeError):
-    """No team-pulse endpoint/credentials are resolvable.
+    """No team-pulse-reports endpoint/credentials are resolvable.
 
     The underlying config layer signals this with a bare ``ValueError``, which
     reaches a caller with no actionable remedy. Every capability that needs the
@@ -36,18 +36,18 @@ class TeamPulseNotConfigured(RuntimeError):
 
     def __init__(self, detail: str = "") -> None:
         self.remedy = (
-            "Set the team-pulse endpoint and credentials, then retry.\n"
+            "Set the team-pulse-reports endpoint and credentials, then retry.\n"
             "  1. Set the endpoint:  export TEAM_PULSE_URL=https://<your-endpoint>\n"
             "  2. Authenticate, either:\n"
             "       a. Azure AD (recommended): run `az login` -- no key to mint or store; or\n"
             "       b. API key:  export TEAM_PULSE_KEY=<key>\n"
-            "  3. Or persist the endpoint once:  team-pulse configure --url <url>\n"
+            "  3. Or persist the endpoint once:  team-pulse-reports configure --url <url>\n"
             "     (writes ~/.team-pulse/.env; relocate with TEAM_PULSE_DIR)\n"
             "These may also be set in a .env file in the working directory "
             "(relocate with TEAM_PULSE_DIR). See CONFIGURATION.md."
         )
         suffix = f" ({detail})" if detail else ""
-        super().__init__(f"team-pulse is not configured{suffix}.\n{self.remedy}")
+        super().__init__(f"team-pulse-reports is not configured{suffix}.\n{self.remedy}")
 
 
 def _call(
@@ -237,7 +237,7 @@ def configure(
     *,
     path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Persist the team-pulse endpoint URL (and optional Azure AD app id).
+    """Persist the team-pulse-reports endpoint URL (and optional Azure AD app id).
 
     Writes your own settings file -- the local, reversible equivalent of
     exporting `TEAM_PULSE_URL`. Not fenced: refusing to save an endpoint the

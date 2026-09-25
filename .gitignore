@@ -15,4 +15,4 @@ build/
 .env
 
 # Personal notes
-.archived/
+*test.sh

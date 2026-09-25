@@ -1,15 +1,15 @@
 # Configuration
 
-`team-pulse status` reports what is and isn't configured. It runs with nothing
+`team-pulse-reports status` reports what is and isn't configured. It runs with nothing
 set and never fails — describing a broken setup is its job. Use it whenever you
 are unsure.
 
 ## Quick start
 
 ```bash
-team-pulse configure --url https://your-team-pulse-host
+team-pulse-reports configure --url https://your-team-pulse-host
 az login                                    # or: export TEAM_PULSE_KEY=tp_...
-team-pulse status
+team-pulse-reports status
 ```
 
 ## Authentication
@@ -47,11 +47,11 @@ Azure being used, check the prefix.
 
 | Env var | What it is |
 |---|---|
-| `TEAM_PULSE_URL` | **Required.** Your endpoint. Also `team-pulse configure --url`. |
+| `TEAM_PULSE_URL` | **Required.** Your endpoint. Also `team-pulse-reports configure --url`. |
 | `TEAM_PULSE_KEY` | API key. See above. |
 | `TEAM_PULSE_API_APP_ID` | Azure app registration. Also `configure --client-id`. |
 | `TEAM_PULSE_DIR` | Directory holding the config file. Default `~/.team-pulse`. Environment only. |
-| `TEAM_PULSE_TIMEOUT` | Seconds to wait on the Team Pulse server. Default 60. Raise it if `ask-service` times out waiting on the server's LLM. |
+| `TEAM_PULSE_TIMEOUT` | Seconds to wait on the Team Pulse server. Default 60. Raise it if a Team Pulse request used by `ask-local` times out. |
 | `TEAM_PULSE_OPENAI_MODEL` | Model `ask-local` uses with OpenAI. |
 | `TEAM_PULSE_ANTHROPIC_MODEL` | Model `ask-local` uses with Anthropic. |
 | `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | Only `ask-local` needs one. |
@@ -67,7 +67,7 @@ TEAM_PULSE_KEY=tp_...
 ```
 
 Always read from that one path, whatever directory you run in. `TEAM_PULSE_DIR`
-moves it. `team-pulse configure` writes it, merging — an existing key survives,
+moves it. `team-pulse-reports configure` writes it, merging — an existing key survives,
 and `configure` never writes a key itself.
 
 ## Using it as a library
@@ -76,10 +76,10 @@ Every capability takes an optional `config`. Pass one and no environment
 variable or file is consulted:
 
 ```python
-from team_pulse import Config, search
+from team_pulse import Config, ask_local
 
 cfg = Config(url="https://your-team-pulse-host", key="tp_...")
-search("onboarding", config=cfg)
+ask_local("What did we decide about onboarding?", config=cfg)
 ```
 
 `Config.from_env()` is the only thing in the package that reads the environment
@@ -105,6 +105,6 @@ Outbound HTTPS, and nothing else:
 
 | Host | When |
 |---|---|
-| your configured endpoint | every capability except `status` and `manifest` |
+| your configured endpoint | `ask-local` and server reachability checks from `status` |
 | `login.microsoftonline.com` | Azure AD auth only |
 | `api.openai.com` / `api.anthropic.com` | `ask-local` only |

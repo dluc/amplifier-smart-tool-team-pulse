@@ -1,74 +1,41 @@
-# team-pulse
+# team-pulse-reports
 
-Read a team's mined corpus — decisions, code and repo wikis, roster, reflection
-questions — as structured data, or ask `ask-local` to retrieve from it and cite
-its sources.
+Manage a Team Pulse lens connection and use `ask-local` for model-backed, grounded answers. The public CLI capability surface is intentionally small:
 
-A library first, with a thin `team-pulse` CLI over it. Every deterministic
-capability runs without a model provider; only `ask-local` needs one.
+- `ask-local` — answer a question with the active model-backed workflow
+- `status` — report configuration and server reachability
+- `configure` — persist the Team Pulse endpoint and optional app id
+- `manifest` — return the machine-readable tool description
+
+The lower-level corpus operations are hidden from the public catalog and CLI, but remain available internally to `ask-local` so it can retrieve evidence and return citations.
 
 - [INSTALL.md](INSTALL.md)
 - [CONFIGURATION.md](CONFIGURATION.md)
 
 ```bash
-team-pulse search --q "renamed service"
-team-pulse get --id members/jdoe
-team-pulse ask-local --question "What did we decide about the rename?"
+team-pulse-reports status
+team-pulse-reports configure --url https://team-pulse.example.com
+team-pulse-reports ask-local --question "What did we decide about the rename?"
+team-pulse-reports manifest
 ```
 
-## Reading the corpus
+## Active capabilities
 
-Each one is a single call, and none needs a model provider.
-
-| Verb | What it's for | Library | In `ask-local` |
+| Verb | What it does | Library | Requirements |
 |---|---|---|---|
-| `info` | What this server has: its resource types and endpoints. First contact with an unfamiliar server, and the authoritative list for `resources --type`. | `info()` | yes |
-| `resources` | List one kind of thing — "what reflection questions exist?", "who are the members?" When you know the kind but not the ids. Returns ids and titles only. | `resources()` | yes |
-| `search` | Find it by words, when you remember a phrase but not where it lives. Substring matching, 50 results by default, 200 max. Returns ids and titles only. | `search()` | yes |
-| `prefix` | List a branch: `members` returns every member, `questions` every question. Cheaper and more precise than `search` when you know the id's shape. | `prefix()` | yes |
-| `get` | Read one page in full, by exact id (`members/jdoe`). The **only** verb that returns a body — the others return ids and titles. Answering without it means answering from titles. | `get()` | yes |
-| `graph` | How everything connects — who is on what, which projects roll up where. For relationship questions a few fetches can't answer. Large payload; prefer targeted lookups. | `graph()` | yes |
+| `ask-local` | Retrieves from the Team Pulse corpus with internal tools and returns a model-backed answer with citations. | `ask_local()` | Team Pulse configuration and an OpenAI or Anthropic provider key |
+| `status` | Reports effective settings and whether the server is reachable. It does not expose secrets and does not raise for a broken setup. | `status()` | None; useful before configuration |
+| `configure` | Saves the Team Pulse endpoint URL and optional Azure AD app id to the local settings file. | `configure()` | A valid HTTPS endpoint |
+| `manifest` | Returns this tool's structured description, requirements, and capability metadata. | `manifest()` | None |
 
-**The pattern:** `search` or `prefix` to find ids, then `get` on the ones worth
-reading.
+`ask-local` uses your configured model provider and may consume provider tokens. It is the only active capability that requires a model provider. Its internal retrieval tools remain enabled even though their public verbs are hidden. The tool performs no shared-data writes through the active surface.
 
-## Answering questions
+## Configuration and behavior
 
-| Verb | What it's for | Library | Needs a provider key |
-|---|---|---|---|
-| `ask-local` | Ask a question, get an answer with the sources it came from. A model drives the retrieval itself — deciding what to search, what to fetch, and when it has enough. | `ask_local()` | yes |
-| `ask-service` | Let the server's own LLM answer. Best for interpreted questions — "how is the team tracking?" — rather than raw data. Fails loudly on HTTP 500; don't retry. | `ask_service()` | no |
-
-Named for whose model runs: `ask-local` uses **yours** and returns what it
-fetched; `ask-service` uses the **server's** and needs no key of your own.
-
-## Writing
-
-| Verb | What it's for | Library | In `ask-local` |
-|---|---|---|---|
-| `submit-answer` | Record a person's answer to a reflection question. Needs their GitHub username and the question's **bare slug** (`hard-questions`, not `questions/hard-questions`). Writes to shared team data. | `submit_answer()` | yes |
-
-## Setup and introspection
-
-| Verb | What it's for | Library |
-|---|---|---|
-| `status` | Which settings are in effect, and whether the server answers. Settings can arrive from three places at once, and this is how you see which won. Never raises. | `status()` |
-| `configure` | Save your server's address so you stop passing it every time. | `configure()` |
-| `manifest` | This tool's own machine-readable description, so a program can discover what it does without reading these docs. | `manifest()` |
-
-## Behavior worth knowing
-
-- **One JSON document per call on stdout.** Failures use the same shape —
-  `{"error": {"type", "message", "remedy"}}` — plus one line on stderr, exit 1.
-- **Preconditions are checked before anything is spent.** `ask-local` fails
-  immediately if no provider key or no server is configured, rather than
-  burning a model call to discover it.
-- **The one write has no gate, deliberately.** `submit-answer` reaches
-  shared team data the moment you call it. A confirmation flag cannot tell
-  who set it, so it enforced nothing while implying it did -- and the
-  bundle had none. The capability description carries the warning instead.
-- **Importing costs nothing.** `import team_pulse` succeeds in an empty
-  environment; credentials resolve only when a capability is called.
+- **One JSON document per call on stdout.** Failures use `{"error": {"type", "message", "remedy"}}` plus one stderr line and exit 1.
+- **Configuration is explicit.** Run `team-pulse-reports status` first, then use `team-pulse-reports configure --url <url>` or set the environment variables described in [CONFIGURATION.md](CONFIGURATION.md).
+- **Provider preconditions are checked first.** `ask-local` fails immediately if its provider key or Team Pulse configuration is missing.
+- **Importing costs nothing.** `import team_pulse` succeeds in an empty environment; credentials resolve only when a capability is called.
 
 ## As a library
 
@@ -77,15 +44,8 @@ import team_pulse as tp
 from team_pulse import Config
 
 cfg = Config(url="https://your-team-pulse-host", key="tp_...")
-
-hits = tp.search("renamed service", config=cfg)
 result = tp.ask_local("What did we decide about the rename?", config=cfg)
 print(result.answer)
 ```
 
-**A library caller never has to touch environment variables.** Pass a `Config`
-and nothing ambient is read. Omit it — `tp.search("...")` — and the settings
-come from the environment and `~/.team-pulse/.env`, which is what the CLI does.
-
-Everything the CLI does, the library does. The CLI only parses arguments and
-shapes errors.
+Pass a `Config` to avoid ambient environment settings. The active library surface mirrors the four capabilities above; the retained API implementations are not advertised until re-enabled in the catalog.

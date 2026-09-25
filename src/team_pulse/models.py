@@ -44,4 +44,4 @@ class ClientInfo:
     az_identity_hint: str | None = (
         None  # RAW Azure AD token claim (upn/appid), unverified,
     )
-    # NOT team-pulse identity
+    # NOT team-pulse-reports identity
